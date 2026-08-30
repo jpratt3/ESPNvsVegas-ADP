@@ -1,0 +1,890 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Draft Value</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>&#127944;</text></svg>">
+<style>
+  :root {
+    color-scheme: light;
+    --page: #eef0f2; --surface: #ffffff; --row-alt: #f7f8f9;
+    --ink: #14161a; --ink-2: #5b6068; --muted: #8b9098;
+    --grid: #e6e8ea; --border: rgba(20,22,26,.12);
+    --link: #2a78d6; --accent: #0a8f2c; --accent-ink: #067023;
+    --hdr: #16181c; --hdr-ink: #ffffff; --hdr-sub: #2a2d33;
+    --chip: #f0efec;
+    --pos-qb: #2a78d6; --pos-rb: #eb6834; --pos-wr: #1baf7a; --pos-te: #eda100;
+    --pos-un: #c3c2b7;
+    --good-text: #006300; --bad-text: #d03b3b;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      color-scheme: dark;
+      --page: #0a0a0b; --surface: #17181a; --row-alt: #1c1e21;
+      --ink: #f4f5f6; --ink-2: #b6bbc2; --muted: #868b93;
+      --grid: #26282c; --border: rgba(255,255,255,.12);
+      --link: #5aa2f0; --accent: #22b544; --accent-ink: #3ecb5e;
+      --hdr: #000000; --hdr-ink: #ffffff; --hdr-sub: #17181a;
+      --chip: #26282c;
+      --pos-qb: #3987e5; --pos-rb: #d95926; --pos-wr: #199e70; --pos-te: #c98500;
+      --pos-un: #383835;
+      --good-text: #0ca30c; --bad-text: #e66767;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--page); color: var(--ink);
+    font: 14px/1.4 -apple-system, system-ui, "Segoe UI", sans-serif;
+  }
+  .app { max-width: 1560px; margin: 0 auto; background: var(--surface); min-height: 100vh; }
+
+  .hdr {
+    position: sticky; top: 0; z-index: 30; background: var(--hdr); color: var(--hdr-ink);
+    display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 16px;
+    padding: 9px 18px;
+  }
+  .hdr-btn {
+    background: none; border: 0; color: var(--hdr-ink); font: inherit; font-size: 14px;
+    cursor: pointer; padding: 6px; opacity: .9;
+  }
+  .hdr-btn:hover { opacity: 1; }
+  .hdr-btn:disabled { opacity: .4; }
+  .hdr-l { display: flex; gap: 12px; align-items: center; }
+  .hdr-r { display: flex; gap: 6px; justify-content: flex-end; align-items: center; }
+  .hdr-title { font-weight: 700; font-size: 15px; }
+  .hdr-mid { text-align: center; }
+  .hdr-label { font-size: 11px; opacity: .72; }
+  .hdr-big { font-size: 25px; font-weight: 700; line-height: 1.15; font-variant-numeric: tabular-nums; }
+  .hdr-big small { font-size: 12.5px; font-weight: 600; opacity: .78; }
+  .ticker {
+    background: var(--hdr-sub); color: #d7dade; font-size: 12.5px; text-align: center;
+    padding: 5px 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .ticker b { color: #fff; }
+
+  .carousel-wrap { display: flex; align-items: stretch; background: var(--page); border-bottom: 1px solid var(--grid); }
+  .round-lab {
+    flex: 0 0 66px; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    font-size: 11.5px; color: var(--ink-2);
+  }
+  .round-lab b { font-size: 20px; color: var(--ink); line-height: 1; }
+  .carousel { display: flex; gap: 7px; overflow-x: auto; padding: 7px 12px 7px 0; }
+  .pcard {
+    flex: 0 0 116px; background: var(--surface);
+    border: 1px solid var(--border); border-radius: 8px; padding: 5px 8px; text-align: center;
+  }
+  .pcard .pno { font-size: 12px; color: var(--ink-2); }
+  .pcard .pwho { font-size: 12.5px; font-weight: 650; margin-top: 2px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .pcard.now { background: var(--accent); border-color: var(--accent); }
+  .pcard.now .pno, .pcard.now .pwho { color: #fff; }
+  .pcard.mine { border-color: var(--accent); border-width: 2px; }
+  .pcard.mine .pwho { color: var(--accent-ink); }
+  .pcard.done { opacity: .42; }
+
+  .nav {
+    display: flex; gap: 2px; padding: 0 12px; background: var(--surface);
+    border-bottom: 1px solid var(--grid); position: sticky; top: 62px; z-index: 20;
+  }
+  .tab {
+    background: none; border: 0; border-bottom: 2.5px solid transparent; font: inherit; font-size: 13.5px;
+    color: var(--muted); padding: 10px 16px 8px; cursor: pointer; display: flex; align-items: center; gap: 7px;
+  }
+  .tab svg { width: 17px; height: 17px; fill: currentColor; }
+  .tab:hover { color: var(--ink-2); }
+  .tab.on { color: var(--accent-ink); border-bottom-color: var(--accent); font-weight: 650; }
+
+  .charts { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; padding: 12px 14px 4px; }
+  @media (max-width: 1100px) { .charts { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 620px)  { .charts { grid-template-columns: 1fr; } }
+  .chart-box { border: 1px solid var(--border); border-radius: 10px; padding: 8px 10px 4px; }
+  .chart-t { font-size: 11.5px; font-weight: 700; color: var(--ink-2); letter-spacing: .04em; }
+  svg.chart { display: block; width: 100%; height: auto; }
+  svg.chart text { font: 9.5px -apple-system, system-ui, sans-serif; fill: var(--muted); }
+  .dot { fill: var(--link); stroke: var(--surface); stroke-width: 1.5; cursor: pointer; }
+  .dot.gone { fill: var(--muted); opacity: .45; }
+  .dot.mine { fill: var(--accent); }
+
+  .filters {
+    display: flex; gap: 8px; align-items: center; padding: 10px 14px;
+    background: var(--surface); border-bottom: 1px solid var(--grid); flex-wrap: wrap;
+  }
+  .pill {
+    appearance: none; font: inherit; font-size: 13px; color: var(--link); background: var(--surface);
+    border: 1px solid var(--border); border-radius: 999px; padding: 6px 28px 6px 13px; cursor: pointer;
+    background-image: linear-gradient(45deg, transparent 50%, currentColor 50%),
+                      linear-gradient(135deg, currentColor 50%, transparent 50%);
+    background-position: calc(100% - 15px) 52%, calc(100% - 10px) 52%;
+    background-size: 5px 5px, 5px 5px; background-repeat: no-repeat;
+  }
+  .flink { background: none; border: 0; font: inherit; font-size: 13.5px; color: var(--link); cursor: pointer; padding: 6px 8px; }
+  .fspacer { flex: 1; }
+  .filters input.q {
+    font: inherit; font-size: 13.5px; padding: 7px 12px; border-radius: 999px; width: 190px;
+    border: 1px solid var(--border); background: var(--page); color: var(--ink);
+  }
+
+  /* overflow-x traps position:sticky, so only create the scroll context on
+     screens actually too narrow for the columns. Wide screens keep the sticky
+     column header. */
+  @media (max-width: 1120px) { .tbl-scroll { overflow-x: auto; } }
+  .cols {
+    display: grid;
+    grid-template-columns: 40px minmax(180px,1fr) 58px 66px 68px 70px 70px 62px 62px 108px 78px;
+    gap: 6px; align-items: center; min-width: 1010px;
+  }
+  .lhead {
+    padding: 9px 14px; font-size: 10.5px; font-weight: 700; color: var(--ink-2); letter-spacing: .05em;
+    border-bottom: 1px solid var(--grid); background: var(--surface); position: sticky; top: 102px; z-index: 15;
+  }
+  .lhead span { text-align: right; cursor: pointer; user-select: none; white-space: nowrap; }
+  .lhead span.l { text-align: left; }
+  .lhead span:hover { color: var(--ink); }
+  .lhead span.on { color: var(--accent-ink); }
+  .prow { padding: 9px 14px; border-bottom: 1px solid var(--grid); cursor: pointer; }
+  .prow:nth-of-type(even) { background: var(--row-alt); }
+  .prow:hover { background: var(--chip); }
+  .rk { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .pname { color: var(--link); font-weight: 650; font-size: 14.5px; line-height: 1.2; }
+  .pmeta { font-size: 12px; color: var(--ink-2); margin-top: 2px; display: flex; align-items: center; gap: 5px; }
+  .poschip { display: inline-block; border-radius: 999px; padding: 1px 7px; font-size: 10.5px; font-weight: 700; color: #fff; }
+  .poschip.QB { background: var(--pos-qb); }
+  .poschip.RB { background: var(--pos-rb); }
+  .poschip.WR { background: var(--pos-wr); }
+  .poschip.TE { background: var(--pos-te); color: #22190a; }
+  .num { text-align: right; font-variant-numeric: tabular-nums; font-size: 14px; }
+  .num.sub { color: var(--ink-2); font-size: 13px; }
+  .num.rank { color: var(--muted); font-size: 13px; }
+  .lines { text-align: right; font-size: 11.5px; color: var(--muted); white-space: nowrap; }
+  .dpos { color: var(--good-text); font-weight: 700; }
+  .dneg { color: var(--bad-text); font-weight: 700; }
+  .qbtn {
+    font: inherit; font-size: 11px; font-weight: 700; border: 1.5px solid var(--border);
+    background: var(--surface); color: var(--ink-2); border-radius: 999px; padding: 6px 0;
+    width: 100%; cursor: pointer;
+  }
+  .qbtn:hover { border-color: var(--accent); color: var(--accent-ink); }
+  .qbtn.gone { background: var(--chip); color: var(--muted); border-color: transparent; }
+  .qbtn.mine { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .prow.is-gone .pname { color: var(--muted); text-decoration: line-through; }
+  .prow.is-gone .num, .prow.is-gone .rk, .prow.is-gone .pmeta, .prow.is-gone .lines { opacity: .5; }
+  .prow.is-mine { background: color-mix(in srgb, var(--accent) 10%, transparent); }
+  .warn { color: var(--muted); font-size: 11px; }
+
+  .divider { display: flex; align-items: center; padding: 0 14px; margin: 3px 0; }
+  .divider .ln { flex: 1; height: 2px; background: var(--accent); }
+  .divider .lab {
+    border: 1.5px solid var(--accent); color: var(--accent-ink); border-radius: 999px;
+    font-size: 12px; font-weight: 700; padding: 3px 13px; background: var(--surface); white-space: nowrap;
+  }
+
+  .detail { padding: 12px 18px 15px; background: var(--page); border-bottom: 1px solid var(--grid); font-size: 13px; }
+  .detail table { border-collapse: collapse; }
+  .detail th { text-align: right; font-size: 10.5px; color: var(--muted); font-weight: 700; padding: 2px 16px 6px 0; }
+  .detail th.l, .detail td.l { text-align: left; }
+  .detail td { text-align: right; padding: 3px 16px 3px 0; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+  .empty { padding: 40px 16px; text-align: center; color: var(--muted); }
+
+  .slot {
+    display: grid; grid-template-columns: 70px minmax(160px,1fr) 80px 80px 80px; gap: 10px; align-items: center;
+    padding: 9px 16px; border-bottom: 1px solid var(--grid); min-height: 50px; max-width: 780px;
+  }
+  .slot:nth-of-type(even) { background: var(--row-alt); }
+  .slot .sl { font-size: 12.5px; color: var(--ink-2); font-weight: 650; letter-spacing: .04em; }
+  .slot.filled { cursor: pointer; }
+  .slot.filled:hover { background: var(--chip); }
+  .slot .pts { text-align: right; font-variant-numeric: tabular-nums; color: var(--ink-2); font-size: 13.5px; }
+
+  .sect-h { padding: 15px 14px 8px; font-size: 11px; font-weight: 700; color: var(--ink-2);
+    text-transform: uppercase; letter-spacing: .06em; }
+  .note { padding: 8px 14px 16px; font-size: 12.5px; color: var(--muted); line-height: 1.55; max-width: 1000px; }
+  .rowline { display: flex; gap: 10px; align-items: center; padding: 10px 14px; border-bottom: 1px solid var(--grid); flex-wrap: wrap; }
+  .rowline label { font-size: 13px; color: var(--ink-2); display: flex; align-items: center; gap: 6px; }
+  .rowline input[type=number] {
+    width: 54px; font: inherit; font-size: 13.5px; padding: 5px 8px; text-align: right;
+    border: 1px solid var(--border); border-radius: 8px; background: var(--page); color: var(--ink);
+  }
+  .btn { font: inherit; font-size: 13.5px; padding: 8px 14px; border-radius: 9px;
+    border: 1px solid var(--border); background: var(--surface); color: var(--ink); cursor: pointer; }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 650; }
+  .btn:disabled { opacity: .5; }
+  .ages { font-size: 13px; color: var(--muted); padding: 10px 14px; }
+  .ages b { color: var(--ink-2); }
+  .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 9px; overflow: hidden; }
+  .seg button { font: inherit; font-size: 13px; border: 0; background: var(--surface); color: var(--ink-2); padding: 7px 13px; cursor: pointer; }
+  .seg button.on { background: var(--chip); color: var(--ink); font-weight: 650; }
+
+  .legend { display: flex; flex-wrap: wrap; gap: 14px; padding: 0 14px 10px; font-size: 12px; color: var(--ink-2); }
+  .legend span { display: inline-flex; align-items: center; gap: 5px; }
+  .swatch { width: 10px; height: 10px; border-radius: 2px; }
+  .bars { display: grid; grid-template-columns: 36px 1fr 46px; gap: 5px 10px; align-items: center;
+    padding: 0 14px 16px; max-width: 1000px; }
+  .bar-tm { font-size: 12px; font-weight: 650; color: var(--ink-2); }
+  .bar-track { display: flex; gap: 2px; height: 15px; }
+  .bar-track div { min-width: 0; border-radius: 1px; }
+  .bar-track div:first-child { border-radius: 4px 1px 1px 4px; }
+  .bar-track div:last-child { border-radius: 1px 4px 4px 1px; }
+  .bar-tot { font-size: 12px; text-align: right; font-variant-numeric: tabular-nums; }
+
+  #tip {
+    position: fixed; pointer-events: none; z-index: 50; display: none; max-width: 250px;
+    background: var(--hdr); color: #fff; border-radius: 8px; padding: 8px 11px; font-size: 12px;
+  }
+  #tip b { display: block; margin-bottom: 2px; }
+  #toast {
+    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); display: none; z-index: 60;
+    background: var(--hdr); color: #fff; border-radius: 10px; padding: 10px 16px; font-size: 13px; max-width: 90vw;
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="hdr">
+    <div class="hdr-l">
+      <span class="hdr-title">Draft Value</span>
+      <button class="hdr-btn" id="hdr-left">Reset board</button>
+    </div>
+    <div class="hdr-mid">
+      <div class="hdr-label" id="hdr-label">Picks until your turn</div>
+      <div class="hdr-big" id="hdr-big">&mdash;</div>
+    </div>
+    <div class="hdr-r">
+      <button class="hdr-btn" id="hdr-refresh">&#8635; Refresh</button>
+      <button class="hdr-btn" id="hdr-right" style="font-size:17px">&#9881;</button>
+    </div>
+  </header>
+  <div class="ticker" id="ticker"></div>
+
+  <div class="carousel-wrap" id="carousel-wrap">
+    <div class="round-lab">Round<b id="round-n">1</b></div>
+    <div class="carousel" id="carousel"></div>
+  </div>
+
+  <nav class="nav">
+    <button class="tab on" data-tab="players"><svg viewBox="0 0 24 24"><path d="M9 11a4 4 0 100-8 4 4 0 000 8zm0 2c-3.3 0-6 1.8-6 4v2h12v-2c0-2.2-2.7-4-6-4zm8-8h5v2h-5zm0 4h5v2h-5zm0 4h5v2h-5z"/></svg>Players</button>
+    <button class="tab" data-tab="roster"><svg viewBox="0 0 24 24"><path d="M8 2h8a2 2 0 012 2v17l-6-3-6 3V4a2 2 0 012-2zm1 5v2h6V7zm0 4v2h6v-2z"/></svg>Roster</button>
+    <button class="tab" data-tab="teams"><svg viewBox="0 0 24 24"><path d="M4 20h16v2H2V2h2zm3-3V9h3v8zm5 0V5h3v12zm5 0v-6h3v6z"/></svg>Teams</button>
+    <button class="tab" data-tab="data"><svg viewBox="0 0 24 24"><path d="M12 2c4.4 0 8 1.6 8 3.5S16.4 9 12 9 4 7.4 4 5.5 7.6 2 12 2zM4 8.6C5.6 9.8 8.6 10.5 12 10.5s6.4-.7 8-1.9v3.9c0 1.9-3.6 3.5-8 3.5s-8-1.6-8-3.5zm0 6.5c1.6 1.2 4.6 1.9 8 1.9s6.4-.7 8-1.9v3.4c0 1.9-3.6 3.5-8 3.5s-8-1.6-8-3.5z"/></svg>Data</button>
+  </nav>
+
+  <section id="tab-players">
+    <div class="charts" id="charts"></div>
+    <div class="filters">
+      <select class="pill" id="f-pos">
+        <option value="ALL">All Pos</option><option>QB</option><option>RB</option><option>WR</option><option>TE</option>
+      </select>
+      <select class="pill" id="f-scoring">
+        <option value="0.5">Half PPR</option><option value="1">PPR</option><option value="0">Standard</option>
+      </select>
+      <span class="seg" id="fillmode" title="Fill: a stat with no book line uses ESPN's projection for that component. Strict: real lines only, partial players unranked.">
+        <button data-f="1" class="on">Fill gaps</button><button data-f="0">Strict</button>
+      </span>
+      <button class="flink" id="f-hide">Hide gone</button>
+      <span class="fspacer"></span>
+      <input class="q" id="q" placeholder="Search players" autocomplete="off">
+    </div>
+    <div class="tbl-scroll">
+      <div class="lhead cols" id="lhead">
+        <span>RK</span>
+        <span class="l" data-k="name">PLAYER</span>
+        <span data-k="adp">ADP</span>
+        <span data-k="adpPosRank">ADP POS#</span>
+        <span data-k="espnPts">ESPN PTS</span>
+        <span data-k="pts">VEGAS PTS</span>
+        <span data-k="vegasPosRank">VEGAS POS#</span>
+        <span data-k="dEspn" title="Vegas minus ESPN, summed only over stats with a real book line">&#916; PTS</span>
+        <span data-k="dAdj" title="Delta pts centered on the startable set - the readable signal">&#916; ADJ</span>
+        <span data-k="cov">LINES</span>
+        <span></span>
+      </div>
+      <div id="plist"></div>
+    </div>
+  </section>
+
+  <section id="tab-roster" hidden>
+    <div class="sect-h">My team <span id="roster-count" style="text-transform:none;letter-spacing:0;font-weight:400"></span></div>
+    <div class="slot" style="min-height:0;padding-top:4px;padding-bottom:6px;background:none">
+      <div class="sl">SLOT</div><div class="sl">PLAYER</div>
+      <div class="sl" style="text-align:right">ADP</div>
+      <div class="sl" style="text-align:right">VEGAS</div>
+      <div class="sl" style="text-align:right">&#916; ADJ</div>
+    </div>
+    <div id="slots"></div>
+    <div class="note">Slots come from your league settings on the Data tab. Players fill by vegas points, best first; FLEX takes the best leftover RB/WR/TE. Click a filled slot to open that player.</div>
+  </section>
+
+  <section id="tab-teams" hidden>
+    <div class="sect-h">Team TD composition</div>
+    <div class="legend">
+      <span><i class="swatch" style="background:var(--pos-qb)"></i>QB rush</span>
+      <span><i class="swatch" style="background:var(--pos-rb)"></i>RB</span>
+      <span><i class="swatch" style="background:var(--pos-wr)"></i>WR</span>
+      <span><i class="swatch" style="background:var(--pos-te)"></i>TE</span>
+      <span><i class="swatch" style="background:var(--pos-un)"></i>Unassigned</span>
+    </div>
+    <div class="bars" id="team-bars"></div>
+    <div class="note">Book lines only, no ESPN fill. A passing TD and its receiving TD are the same score, counted once. Teams marked * have no QB passing-TD line, so a low number means unpriced, not bad. Rushing TDs are bottom-up, so totals undercount teams whose backups have no market.</div>
+  </section>
+
+  <section id="tab-data" hidden>
+    <div class="sect-h">Refresh</div>
+    <div class="rowline">
+      <button class="btn primary" id="r-all">Refresh all</button>
+      <button class="btn" id="r-espn">ADP only</button>
+      <button class="btn" id="r-vegas">Vegas only</button>
+    </div>
+    <div class="ages" id="ages"></div>
+    <div class="sect-h">League</div>
+    <div class="rowline">
+      <label>Teams <input type="number" id="lg-teams" min="4" max="20"></label>
+      <label>Your slot <input type="number" id="lg-slot" min="1" max="20"></label>
+      <label>QB <input type="number" id="lg-QB" min="0" max="3"></label>
+      <label>RB <input type="number" id="lg-RB" min="0" max="5"></label>
+      <label>WR <input type="number" id="lg-WR" min="0" max="6"></label>
+      <label>TE <input type="number" id="lg-TE" min="0" max="3"></label>
+      <label>FLEX <input type="number" id="lg-FLEX" min="0" max="4"></label>
+      <label>Bench <input type="number" id="lg-BE" min="0" max="12"></label>
+    </div>
+    <div class="note" id="rep-note"></div>
+    <div class="sect-h">Draft board</div>
+    <div class="rowline">
+      <button class="btn" id="reset-board">Clear all marks</button>
+      <span id="board-count" style="font-size:13px;color:var(--muted)"></span>
+    </div>
+    <div class="sect-h">Coverage</div>
+    <div class="note" id="unmatched"></div>
+  </section>
+</div>
+<div id="tip"></div>
+<div id="toast"></div>
+<script>
+const STATS = ["pass_yds","pass_tds","rush_yds","rush_tds","rec_yds","rec_tds","receptions","ints"];
+const STAT_LABEL = {pass_yds:"Pass yds", pass_tds:"Pass TD", rush_yds:"Rush yds", rush_tds:"Rush TD",
+                    rec_yds:"Rec yds", rec_tds:"Rec TD", receptions:"Rec", ints:"INT"};
+const CORE = {QB:["pass_yds","pass_tds"], RB:["rush_yds","rush_tds"], WR:["rec_yds","rec_tds"], TE:["rec_yds","rec_tds"]};
+const SECONDARY = {QB:["rush_yds"], RB:["rec_yds"], WR:[], TE:[]};
+const YPR = {RB: 8.5, WR: 13, TE: 11};
+const BOOK_LABEL = {draftkings:"DK", pinnacle:"Pinn", bovada:"Bov"};
+const FLEX_SHARE = {RB: 0.45, WR: 0.45, TE: 0.10};
+const ASC_KEYS = {adp:1, adpPosRank:1, vegasPosRank:1, name:1};
+
+const $ = s => document.querySelector(s);
+const LEAGUE_KEY = "draftValue.league.2026", BOARD_KEY = "draftValue.board.2026", LAST_KEY = "draftValue.last.2026";
+let league = Object.assign({teams:14, slot:8, QB:1, RB:2, WR:2, TE:1, FLEX:1, BE:6},
+  JSON.parse(localStorage.getItem(LEAGUE_KEY) || "{}"));
+let board = JSON.parse(localStorage.getItem(BOARD_KEY) || "{}");
+let lastMarked = localStorage.getItem(LAST_KEY) || null;
+let raw = null, ppr = 0.5, posFilter = "ALL", sortKey = "adp", sortAsc = true, query = "";
+let hideGone = false, fillMode = true, tab = "players", openKey = null, repAnchor = {};
+
+const pkey = p => p.name + "|" + p.pos + "|" + p.team;
+function saveBoard() {
+  localStorage.setItem(BOARD_KEY, JSON.stringify(board));
+  if (lastMarked) localStorage.setItem(LAST_KEY, lastMarked); else localStorage.removeItem(LAST_KEY);
+}
+const saveLeague = () => localStorage.setItem(LEAGUE_KEY, JSON.stringify(league));
+
+function replacementRanks() {
+  const t = league.teams, r = {};
+  for (const pos of ["QB","RB","WR","TE"])
+    r[pos] = Math.round(t * (league[pos]||0) + t * (league.FLEX||0) * (FLEX_SHARE[pos]||0));
+  return r;
+}
+function weights(v) {
+  return {pass_yds:.04, pass_tds:4, rush_yds:.1, rush_tds:6, rec_yds:.1, rec_tds:6, receptions:v, ints:-2};
+}
+function ptsFrom(map, v) {
+  const w = weights(v); let p = 0;
+  for (const s of STATS) if (map[s] != null) p += map[s] * w[s];
+  return p;
+}
+
+function compute() {
+  const players = raw.players.map(pl => {
+    const p = Object.assign({}, pl);
+    p.espnPts = p.proj && Object.keys(p.proj).length ? ptsFrom(p.proj, ppr) : null;
+    const comp = {}, used = [], filled = [];
+    for (const s of STATS) {
+      const v = p.stats[s] && p.stats[s].agg;
+      if (v != null) { comp[s] = v; used.push(s); }
+      else if (fillMode && p.proj && p.proj[s]) { comp[s] = p.proj[s]; filled.push(s); }
+    }
+    p.estRec = null;
+    if (!fillMode && ppr > 0 && comp.rec_yds != null && comp.receptions == null && YPR[p.pos]) {
+      p.estRec = Math.round(comp.rec_yds / YPR[p.pos]);
+      comp.receptions = p.estRec;
+    }
+    p.comp = comp; p.used = used; p.filled = filled;
+    p.pts = used.length ? ptsFrom(comp, ppr) : null;
+    // Component-matched: only stats with a real book line count as disagreement,
+    // so missing data never reads as ESPN and vegas disagreeing.
+    const w = weights(ppr); let dv = 0, matched = 0;
+    for (const s of used) if (p.proj && p.proj[s] != null) { dv += (comp[s] - p.proj[s]) * w[s]; matched++; }
+    p.dEspn = matched ? dv : null;
+    p.state = board[pkey(p)] || null;
+    return p;
+  });
+  players.forEach(p => {
+    const core = (CORE[p.pos]||[]).filter(s => !p.used.includes(s));
+    p.missing = core.concat((SECONDARY[p.pos]||[]).filter(s => !p.used.includes(s)));
+    p.rankable = p.pts != null && (fillMode ? p.used.length > 0 : core.length === 0);
+    p.cov = p.used.length;
+    p.vegasPosRank = null;
+  });
+  const byPos = {};
+  players.forEach(p => { (byPos[p.pos] = byPos[p.pos] || []).push(p); });
+  for (const pos in byPos) {
+    byPos[pos].slice().sort((a,b) => a.adp - b.adp).forEach((p,i) => p.adpPosRank = i+1);
+    byPos[pos].filter(p => p.rankable).sort((a,b) => b.pts - a.pts).forEach((p,i) => p.vegasPosRank = i+1);
+  }
+  // dAdj is centred on STARTABLE players: a median over the whole scraped pool
+  // moved with the scrape limit, which made the metric scale-dependent.
+  const repRank = replacementRanks(); repAnchor = {};
+  for (const pos in byPos) {
+    const n = byPos[pos].filter(p => p.rankable).length, want = repRank[pos] || n;
+    repAnchor[pos] = {used: Math.min(want, n), want, short: n < want};
+  }
+  const byPosD = {};
+  players.forEach(p => {
+    if (p.rankable && p.dEspn != null && p.vegasPosRank <= (repRank[p.pos] || Infinity))
+      (byPosD[p.pos] = byPosD[p.pos] || []).push(p.dEspn);
+  });
+  const med = {};
+  for (const pos in byPosD) {
+    const v = byPosD[pos].sort((a,b) => a-b);
+    med[pos] = v.length % 2 ? v[(v.length-1)/2] : (v[v.length/2-1] + v[v.length/2]) / 2;
+  }
+  players.forEach(p => p.dAdj = (p.dEspn != null && med[p.pos] != null) ? p.dEspn - med[p.pos] : null);
+  return players;
+}
+
+// Snake order: odd rounds run 1..N, even rounds run N..1.
+function myPicks(count) {
+  const t = league.teams, s = Math.min(league.slot, t), out = [];
+  for (let r = 1; r <= count; r++) out.push((r-1)*t + (r % 2 ? s : t - s + 1));
+  return out;
+}
+function draftPos() {
+  const made = Object.keys(board).length, cur = made + 1, t = league.teams;
+  const mine = myPicks(30);
+  let next = null;
+  for (const p of mine) if (p >= cur) { next = p; break; }
+  return {made, cur, next, until: next == null ? null : next - cur,
+          round: Math.floor((cur-1)/t) + 1,
+          nextRound: next == null ? null : Math.floor((next-1)/t) + 1,
+          mineSet: new Set(mine)};
+}
+
+function renderHeader() {
+  const d = draftPos();
+  $("#round-n").textContent = d.round;
+  if (d.until === 0) {
+    $("#hdr-label").textContent = "You are on the clock";
+    $("#hdr-big").textContent = "PICK " + d.cur;
+  } else if (d.until == null) {
+    $("#hdr-label").textContent = "Pick";
+    $("#hdr-big").textContent = String(d.cur);
+  } else {
+    $("#hdr-label").textContent = "Picks until your turn";
+    $("#hdr-big").innerHTML = d.until + " <small>&middot; you are up at " + d.next + "</small>";
+  }
+  const car = $("#carousel"); car.innerHTML = "";
+  for (let i = 0; i < 14; i++) {
+    const n = d.cur + i - 2;
+    if (n < 1) continue;
+    const r = Math.floor((n-1)/league.teams) + 1;
+    const isMine = d.mineSet.has(n);
+    const c = document.createElement("div");
+    c.className = "pcard" + (n === d.cur ? " now" : "") + (isMine && n !== d.cur ? " mine" : "") + (n < d.cur ? " done" : "");
+    c.innerHTML = "<div class=\"pno\">Pick " + n + " (R" + r + ")</div><div class=\"pwho\">" +
+      (isMine ? "YOUR PICK" : n < d.cur ? "done" : "&nbsp;") + "</div>";
+    car.appendChild(c);
+  }
+  const gone = Object.values(board).filter(v => v === "drafted").length;
+  const mineN = Object.values(board).filter(v => v === "mine").length;
+  $("#board-count").textContent = gone + " gone, " + mineN + " yours";
+}
+
+function renderTicker(players) {
+  let last = null;
+  if (lastMarked) for (const p of players) if (pkey(p) === lastMarked) { last = p; break; }
+  const n = Object.keys(board).length;
+  $("#ticker").innerHTML = last
+    ? "Last marked: <b>" + last.name + ", " + last.pos + ", " + last.team + "</b>" +
+      (board[lastMarked] === "mine" ? " &mdash; yours" : "")
+    : n ? n + " player" + (n === 1 ? "" : "s") + " off the board"
+        : "Nothing marked yet - click MARK to take a player off the board";
+}
+
+function renderPlayers(players) {
+  const d = draftPos();
+  let rows = players.filter(p => p.pts != null
+    && (posFilter === "ALL" || p.pos === posFilter)
+    && !(hideGone && p.state === "drafted")
+    && (!query || p.name.toLowerCase().indexOf(query) >= 0));
+  rows.sort((a,b) => {
+    let x = a[sortKey], y = b[sortKey];
+    if (typeof x === "string") return sortAsc ? x.localeCompare(y) : y.localeCompare(x);
+    if (x == null) return 1;
+    if (y == null) return -1;
+    return sortAsc ? x - y : y - x;
+  });
+  document.querySelectorAll("#lhead span").forEach(s => s.classList.toggle("on", s.dataset.k === sortKey));
+  const list = $("#plist"); list.innerHTML = "";
+  if (!rows.length) { list.innerHTML = "<div class=\"empty\">No players match.</div>"; return; }
+
+  // The divider only means anything in draft order, so it rides the ADP sort.
+  let dividerAt = -1;
+  if (sortKey === "adp" && sortAsc && d.until != null && d.until > 0) {
+    let avail = 0;
+    for (let i = 0; i < rows.length; i++) {
+      if (rows[i].state) continue;
+      avail++;
+      if (avail === d.until) { dividerAt = i; break; }
+    }
+  }
+
+  rows.forEach((p, i) => {
+    const tr = document.createElement("div");
+    tr.className = "prow cols" + (p.state === "drafted" ? " is-gone" : p.state === "mine" ? " is-mine" : "");
+    const warn = p.missing.length
+      ? "<span class=\"warn\" title=\"No line for: " + p.missing.map(s => STAT_LABEL[s]).join(", ") + "\">&#9888;</span>" : "";
+    const de = p.dEspn, da = p.dAdj;
+    const btn = p.state === "mine" ? "MINE" : p.state === "drafted" ? "GONE" : "MARK";
+    const btnCls = p.state === "mine" ? "mine" : p.state === "drafted" ? "gone" : "";
+    let lines = p.rankable ? p.cov + " line" + (p.cov === 1 ? "" : "s") : "partial (" + p.cov + ")";
+    if (p.filled.length) lines += " +" + p.filled.length + "f";
+    if (p.estRec != null) lines += " +est";
+    tr.innerHTML =
+      "<div class=\"rk\">" + (i+1) + "</div>" +
+      "<div><div class=\"pname\">" + p.name + "</div>" +
+      "<div class=\"pmeta\">" + p.team + " <span class=\"poschip " + p.pos + "\">" + p.pos + "</span>" + warn + "</div></div>" +
+      "<div class=\"num sub\">" + p.adp.toFixed(1) + "</div>" +
+      "<div class=\"num rank\">" + p.pos + p.adpPosRank + "</div>" +
+      "<div class=\"num sub\">" + (p.espnPts == null ? "-" : p.espnPts.toFixed(1)) + "</div>" +
+      "<div class=\"num\">" + p.pts.toFixed(1) + (p.rankable ? "" : "<span class=\"warn\">*</span>") + "</div>" +
+      "<div class=\"num rank\">" + (p.rankable ? p.pos + p.vegasPosRank : "-") + "</div>" +
+      "<div class=\"num " + (de > 0 ? "dpos" : de < 0 ? "dneg" : "") + "\">" +
+        (de == null ? "-" : (de > 0 ? "+" : "") + de.toFixed(0)) + "</div>" +
+      "<div class=\"num " + (da > 0 ? "dpos" : da < 0 ? "dneg" : "") + "\">" +
+        (da == null ? "-" : (da > 0 ? "+" : "") + da.toFixed(0)) + "</div>" +
+      "<div class=\"lines\">" + lines + "</div>" +
+      "<div><button class=\"qbtn " + btnCls + "\">" + btn + "</button></div>";
+    tr.querySelector(".qbtn").addEventListener("click", ev => { ev.stopPropagation(); cycleMark(p); });
+    tr.addEventListener("click", () => { openKey = openKey === pkey(p) ? null : pkey(p); render(); });
+    list.appendChild(tr);
+    if (openKey === pkey(p)) list.appendChild(detailEl(p));
+    if (i === dividerAt) {
+      const el = document.createElement("div");
+      el.className = "divider";
+      el.innerHTML = "<span class=\"ln\"></span><span class=\"lab\">YOUR PICK (R" + d.nextRound + ", P" + d.next + ")</span><span class=\"ln\"></span>";
+      list.appendChild(el);
+    }
+  });
+}
+
+function cycleMark(p) {
+  const k = pkey(p);
+  const cur = board[k] || null;
+  const next = cur === null ? "drafted" : cur === "drafted" ? "mine" : null;
+  if (next) { board[k] = next; lastMarked = k; }
+  else { delete board[k]; if (lastMarked === k) lastMarked = null; }
+  saveBoard(); render();
+}
+const fmtOdds = o => o == null ? "-" : (o > 0 ? "+" + o : o);
+
+function detailEl(p) {
+  const w = weights(ppr);
+  const books = {};
+  STATS.forEach(s => { if (p.stats[s] && p.stats[s].books) Object.keys(p.stats[s].books).forEach(b => books[b] = 1); });
+  const bl = Object.keys(books);
+  let h = "<table><tr><th class=\"l\">Stat</th><th>Used</th><th>&rarr; pts</th><th>ESPN proj</th>";
+  bl.forEach(b => h += "<th>" + (BOOK_LABEL[b] || b) + "</th>");
+  h += "</tr>";
+  for (const s of STATS) {
+    const v = p.comp[s], proj = p.proj ? p.proj[s] : null;
+    if (v == null && proj == null) continue;
+    const isFill = p.filled.indexOf(s) >= 0, isEst = s === "receptions" && p.estRec != null;
+    h += "<tr><td class=\"l\">" + STAT_LABEL[s] + "</td><td>" +
+      (v == null ? "-" : v + (isFill ? " <span style=\"opacity:.6\">(ESPN)</span>" : isEst ? " <span style=\"opacity:.6\">(est)</span>" : "")) +
+      "</td><td>" + (v == null ? "-" : (v*w[s]).toFixed(1)) + "</td>" +
+      "<td style=\"opacity:.65\">" + (proj == null ? "-" : proj) + "</td>";
+    bl.forEach(b => {
+      const r = p.stats[s] && p.stats[s].books && p.stats[s].books[b];
+      h += r ? "<td>" + r.line + " <span style=\"opacity:.55\">(" + fmtOdds(r.over) + "/" + fmtOdds(r.under) + ")</span></td>"
+             : "<td style=\"opacity:.4\">-</td>";
+    });
+    h += "</tr>";
+  }
+  h += "</table><div style=\"margin-top:10px;font-size:12.5px;color:var(--muted)\">ESPN " +
+    (p.espnPts == null ? "-" : p.espnPts.toFixed(1)) + " &middot; vegas " + p.pts.toFixed(1) + " &middot; " +
+    p.cov + " real line" + (p.cov === 1 ? "" : "s") + (p.filled.length ? " +" + p.filled.length + " filled from ESPN" : "") +
+    " &middot; " + p.pos + (p.vegasPosRank == null ? "-" : p.vegasPosRank) + " by vegas, " +
+    p.pos + p.adpPosRank + " by ADP</div>";
+  const d = document.createElement("div");
+  d.className = "detail"; d.innerHTML = h;
+  d.addEventListener("click", ev => ev.stopPropagation());
+  return d;
+}
+
+function renderRoster(players) {
+  const mine = players.filter(p => p.state === "mine").sort((a,b) => (b.pts||0) - (a.pts||0));
+  const pool = mine.slice(), slots = [];
+  for (const pos of ["QB","RB","WR","TE"])
+    for (let i = 0; i < (league[pos]||0); i++) slots.push({label: pos, match: [pos]});
+  for (let i = 0; i < (league.FLEX||0); i++) slots.push({label:"FLEX", match:["RB","WR","TE"]});
+  for (let i = 0; i < (league.BE||0); i++) slots.push({label:"BE", match:["QB","RB","WR","TE"]});
+  const el = $("#slots"); el.innerHTML = "";
+  for (const s of slots) {
+    let idx = -1;
+    for (let i = 0; i < pool.length; i++) if (s.match.indexOf(pool[i].pos) >= 0) { idx = i; break; }
+    const p = idx >= 0 ? pool.splice(idx,1)[0] : null;
+    const row = document.createElement("div");
+    row.className = "slot" + (p ? " filled" : "");
+    const da = p ? p.dAdj : null;
+    row.innerHTML = "<div class=\"sl\">" + s.label + "</div><div>" +
+      (p ? "<div class=\"pname\">" + p.name + "</div><div class=\"pmeta\">" + p.team +
+           " <span class=\"poschip " + p.pos + "\">" + p.pos + "</span></div>" : "") +
+      "</div><div class=\"pts\">" + (p ? p.adp.toFixed(1) : "") + "</div>" +
+      "<div class=\"pts\">" + (p ? p.pts.toFixed(1) : "") + "</div>" +
+      "<div class=\"pts " + (da > 0 ? "dpos" : da < 0 ? "dneg" : "") + "\">" +
+        (p && da != null ? (da > 0 ? "+" : "") + da.toFixed(0) : "") + "</div>";
+    if (p) row.addEventListener("click", () => { tab = "players"; openKey = pkey(p); render(); });
+    el.appendChild(row);
+  }
+  let total = 0;
+  mine.forEach(p => total += (p.pts || 0));
+  $("#roster-count").textContent = "- " + mine.length + (mine.length === 1 ? " player, " : " players, ") +
+    total.toFixed(0) + " vegas pts";
+}
+
+function renderCharts(players) {
+  const wrap = $("#charts"); wrap.innerHTML = "";
+  const list = posFilter === "ALL" ? ["QB","RB","WR","TE"] : [posFilter];
+  for (const pos of list) {
+    const data = players.filter(p => p.pos === pos && p.rankable);
+    if (!data.length) continue;
+    const box = document.createElement("div");
+    box.className = "chart-box";
+    box.innerHTML = "<div class=\"chart-t\">" + pos + "</div>";
+    box.appendChild(scatter(data, list.length === 1));
+    wrap.appendChild(box);
+  }
+}
+function scatter(data, wide) {
+  const W = wide ? 1200 : 330, H = wide ? 300 : 190, m = {l:34, r:8, t:8, b:22};
+  const svg = document.createElementNS("http://www.w3.org/2000/svg","svg");
+  svg.setAttribute("viewBox", "0 0 " + W + " " + H);
+  svg.setAttribute("class","chart");
+  const xMax = Math.max.apply(null, data.map(p => p.adp)) * 1.05;
+  const ys = data.map(p => p.pts);
+  const yMin = Math.min.apply(null, ys), yMax = Math.max.apply(null, ys);
+  const pad = (yMax - yMin) * .08 || 10;
+  const x = v => m.l + (v/xMax) * (W-m.l-m.r);
+  const y = v => H - m.b - ((v - yMin + pad)/(yMax - yMin + 2*pad)) * (H-m.t-m.b);
+  let g = "";
+  ticks(yMin, yMax, 3).forEach(t => {
+    g += "<line x1=\"" + m.l + "\" x2=\"" + (W-m.r) + "\" y1=\"" + y(t) + "\" y2=\"" + y(t) + "\" stroke=\"var(--grid)\"/>";
+    g += "<text x=\"" + (m.l-5) + "\" y=\"" + (y(t)+3) + "\" text-anchor=\"end\">" + Math.round(t) + "</text>";
+  });
+  ticks(0, xMax, wide ? 8 : 4).forEach(t => {
+    if (t) g += "<text x=\"" + x(t) + "\" y=\"" + (H-7) + "\" text-anchor=\"middle\">" + Math.round(t) + "</text>";
+  });
+  svg.innerHTML = g;
+  data.forEach(p => {
+    const c = document.createElementNS("http://www.w3.org/2000/svg","circle");
+    c.setAttribute("cx", x(p.adp)); c.setAttribute("cy", y(p.pts));
+    c.setAttribute("r", wide ? 5 : 4);
+    c.setAttribute("class", "dot" + (p.state === "drafted" ? " gone" : p.state === "mine" ? " mine" : ""));
+    c.addEventListener("mousemove", ev => showTip(ev, p));
+    c.addEventListener("mouseleave", hideTip);
+    c.addEventListener("click", () => { openKey = pkey(p); sortKey = "adp"; sortAsc = true; render(); });
+    svg.appendChild(c);
+  });
+  return svg;
+}
+function ticks(min, max, n) {
+  const span = max - min || 1, step = Math.pow(10, Math.floor(Math.log10(span/n)));
+  const e = span/n/step, s = step * (e >= 7.5 ? 10 : e >= 3.5 ? 5 : e >= 1.5 ? 2 : 1);
+  const out = [];
+  for (let v = Math.ceil(min/s)*s; v <= max; v += s) out.push(v);
+  return out;
+}
+function showTip(ev, p) {
+  const t = $("#tip");
+  t.innerHTML = "<b>" + p.name + "</b>" + p.pos + p.vegasPosRank + " &middot; " + p.team +
+    "<br>ADP " + p.adp.toFixed(1) + " &middot; vegas " + p.pts.toFixed(1) +
+    "<br>&#916; adj " + (p.dAdj == null ? "-" : (p.dAdj > 0 ? "+" : "") + p.dAdj.toFixed(0)) +
+    (p.state ? "<br>" + (p.state === "mine" ? "yours" : "off the board") : "");
+  t.style.display = "block";
+  let lx = ev.clientX + 14;
+  if (lx + 260 > innerWidth) lx = ev.clientX - 260;
+  t.style.left = lx + "px"; t.style.top = (ev.clientY + 14) + "px";
+}
+function hideTip() { $("#tip").style.display = "none"; }
+
+const SEGS = [["qb","QB rush","--pos-qb"],["rb","RB","--pos-rb"],["wr","WR","--pos-wr"],
+              ["te","TE","--pos-te"],["un","Unassigned","--pos-un"]];
+function teamAgg() {
+  const T = {};
+  for (const p of raw.players) {
+    const g = s => (p.stats[s] && p.stats[s].agg) || 0;
+    const pass = g("pass_tds"), rush = g("rush_tds"), rec = g("rec_tds");
+    if (!pass && !rush && !rec) continue;
+    const t = T[p.team] = T[p.team] || {tm:p.team, pass:0, qb:0, rb:0, wr:0, te:0, rush:0, rec:0, n:0};
+    t.n++; t.pass += pass; t.rush += rush; t.rec += rec;
+    if (p.pos === "QB") t.qb += rush;
+    else if (p.pos === "RB") t.rb += rush + rec;
+    else if (p.pos === "WR") t.wr += rush + rec;
+    else if (p.pos === "TE") t.te += rush + rec;
+  }
+  const rows = Object.keys(T).map(k => T[k]);
+  rows.forEach(t => {
+    t.un = Math.max(0, t.pass - t.rec);
+    t.total = t.qb + t.rb + t.wr + t.te + t.un;
+    t.noQB = t.pass === 0;
+  });
+  return rows.sort((a,b) => (a.noQB !== b.noQB) ? (a.noQB ? 1 : -1) : b.total - a.total);
+}
+function renderTeamBars() {
+  const rows = teamAgg();
+  const max = Math.max.apply(null, rows.map(t => t.total)) || 1;
+  const el = $("#team-bars"); el.innerHTML = "";
+  rows.forEach(t => {
+    const tm = document.createElement("div"); tm.className = "bar-tm"; tm.textContent = t.tm;
+    const track = document.createElement("div"); track.className = "bar-track";
+    track.style.width = (t.total/max*100) + "%";
+    if (t.noQB) track.style.opacity = ".5";
+    SEGS.forEach(seg => {
+      const k = seg[0];
+      if (!t[k]) return;
+      const el2 = document.createElement("div");
+      el2.style.flex = t[k] + " 0 0";
+      el2.style.background = "var(" + seg[2] + ")";
+      el2.title = t.tm + " " + seg[1] + ": " + t[k].toFixed(1) + " of " + t.total.toFixed(1);
+      track.appendChild(el2);
+    });
+    const tot = document.createElement("div"); tot.className = "bar-tot";
+    tot.innerHTML = t.noQB ? "<span style=\"color:var(--muted)\">" + t.total.toFixed(0) + "*</span>" : t.total.toFixed(0);
+    el.appendChild(tm); el.appendChild(track); el.appendChild(tot);
+  });
+}
+
+function fmtAge(iso) {
+  if (!iso) return "never";
+  const m = (Date.now() - new Date(iso)) / 60000;
+  if (m < 1) return "just now";
+  if (m < 60) return Math.round(m) + "m ago";
+  if (m < 48*60) return Math.round(m/60) + "h ago";
+  return Math.round(m/1440) + "d ago";
+}
+function renderData() {
+  const t = raw.timestamps;
+  $("#ages").innerHTML = "ESPN ADP <b>" + fmtAge(t.espn) + "</b> &nbsp;&middot;&nbsp; DraftKings <b>" + fmtAge(t.draftkings) +
+    "</b> &nbsp;&middot;&nbsp; Pinnacle <b>" + fmtAge(t.pinnacle) + "</b> &nbsp;&middot;&nbsp; Bovada <b>" + fmtAge(t.bovada) + "</b>";
+  const rep = replacementRanks();
+  $("#rep-note").innerHTML = "Startable through " + ["QB","RB","WR","TE"].map(x => {
+    const a = repAnchor[x];
+    return (a && a.short)
+      ? "<span style=\"color:var(--bad-text)\" title=\"Only " + a.used + " " + x + "s have vegas lines, fewer than the " +
+        a.want + " this league starts, so the centering falls back to all " + a.used + ".\">" + x + a.used + "*</span>"
+      : x + rep[x];
+  }).join(" &middot; ") + ". &#916; adj is centered on that startable set, so it does not drift with the size of the player pull. The flex split (RB/WR/TE 45/45/10) is an assumption.";
+  const un = raw.unmatched_vegas;
+  $("#unmatched").textContent = un.length
+    ? un.length + " vegas players had no ESPN ADP match: " + un.map(u => u.name).join(", ")
+    : "Every vegas player matched an ESPN player.";
+  ["teams","slot","QB","RB","WR","TE","FLEX","BE"].forEach(k => {
+    const i = document.getElementById("lg-" + k);
+    if (i && document.activeElement !== i) i.value = league[k];
+  });
+}
+
+function render() {
+  if (!raw) return;
+  ["players","roster","teams","data"].forEach(t =>
+    document.getElementById("tab-" + t).hidden = (t !== tab));
+  document.querySelectorAll(".tab").forEach(b => b.classList.toggle("on", b.dataset.tab === tab));
+  $("#carousel-wrap").hidden = (tab === "data");
+  const players = compute();
+  renderHeader(); renderTicker(players);
+  if (tab === "players") { renderCharts(players); renderPlayers(players); }
+  if (tab === "roster") renderRoster(players);
+  if (tab === "teams") renderTeamBars();
+  renderData();
+}
+async function load() {
+  raw = await (await fetch("/api/data")).json();
+  render();
+}
+async function doRefresh(src, btn) {
+  const btns = [].slice.call(document.querySelectorAll("#tab-data .btn")).concat([$("#hdr-refresh")]);
+  btns.forEach(b => b.disabled = true);
+  const old = btn.textContent;
+  btn.textContent = "Refreshing...";
+  try {
+    const j = await (await fetch("/api/refresh/" + src, {method:"POST"})).json();
+    const errs = Object.keys(j.errors || {});
+    if (errs.length) toast("Issues - " + errs.map(k => k + ": " + j.errors[k]).join("; "));
+    await load();
+  } catch (e) {
+    toast("Refresh failed: " + e);
+  } finally {
+    btns.forEach(b => b.disabled = false);
+    btn.textContent = old;
+  }
+}
+let tt;
+function toast(m) {
+  const t = $("#toast");
+  t.textContent = m; t.style.display = "block";
+  clearTimeout(tt); tt = setTimeout(() => t.style.display = "none", 6000);
+}
+function clearBoard() {
+  const n = Object.keys(board).length;
+  if (!n) { toast("Nothing marked yet."); return; }
+  if (!confirm("Clear all " + n + " marks?")) return;
+  board = {}; lastMarked = null; saveBoard(); render();
+}
+
+document.querySelectorAll(".tab").forEach(b =>
+  b.addEventListener("click", () => { tab = b.dataset.tab; openKey = null; render(); }));
+document.querySelectorAll("#lhead span[data-k]").forEach(sp =>
+  sp.addEventListener("click", () => {
+    const k = sp.dataset.k;
+    if (sortKey === k) sortAsc = !sortAsc;
+    else { sortKey = k; sortAsc = !!ASC_KEYS[k]; }
+    render();
+  }));
+$("#f-pos").addEventListener("change", e => { posFilter = e.target.value; render(); });
+$("#f-scoring").addEventListener("change", e => { ppr = parseFloat(e.target.value); render(); });
+$("#f-hide").addEventListener("click", e => {
+  hideGone = !hideGone;
+  e.target.textContent = hideGone ? "Show all" : "Hide gone";
+  render();
+});
+$("#q").addEventListener("input", e => { query = e.target.value.trim().toLowerCase(); render(); });
+$("#fillmode").addEventListener("click", e => {
+  if (e.target.tagName !== "BUTTON") return;
+  fillMode = e.target.dataset.f === "1";
+  document.querySelectorAll("#fillmode button").forEach(b => b.classList.toggle("on", b === e.target));
+  render();
+});
+["teams","slot","QB","RB","WR","TE","FLEX","BE"].forEach(k =>
+  document.getElementById("lg-" + k).addEventListener("change", e => {
+    const v = parseInt(e.target.value, 10);
+    if (!isNaN(v) && v >= 0) { league[k] = v; saveLeague(); render(); }
+  }));
+$("#reset-board").addEventListener("click", clearBoard);
+$("#hdr-left").addEventListener("click", clearBoard);
+$("#hdr-right").addEventListener("click", () => { tab = "data"; render(); });
+$("#hdr-refresh").addEventListener("click", e => doRefresh("all", e.target));
+$("#r-all").addEventListener("click", e => doRefresh("all", e.target));
+$("#r-espn").addEventListener("click", e => doRefresh("espn", e.target));
+$("#r-vegas").addEventListener("click", e => doRefresh("vegas", e.target));
+setInterval(() => { if (raw) renderData(); }, 30000);
+load();
+</script>
+</body>
+</html>
