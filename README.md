@@ -1,7 +1,7 @@
 # Draft Value
 
 This is a locally run draft board for fantasy football that prices players against
-sportsbook lines instead of pundit rankings. It pulls ESPN's average draft position and
+sportsbook lines instead of arbitrary app rankings. It pulls ESPN's average draft position and
 season-long player props from DraftKings, Pinnacle, and Bovada, converts the props into
 implied fantasy points under your scoring, and shows where the draft market and the
 betting market disagree. Runs entirely on your own machine. Nothing is sent anywhere
