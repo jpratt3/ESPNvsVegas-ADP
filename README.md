@@ -117,7 +117,7 @@ league drafting from slot 8.
 ![Data tab](docs/data.png)
 
 - **Teams** and **your slot** drive the snake maths. Get the slot wrong and the countdown
-  and the divider are wrong together, quietly.
+  and the divider are wrong together.
 - **Starter slots and bench** define the roster layout and the replacement level that
   delta adj centres on.
 - The **flex split** behind replacement level is fixed at RB 45% / WR 45% / TE 10%. It is
