@@ -9,9 +9,11 @@ except the read-only requests to ESPN and the three books.
 
 ![Player board](docs/players.png)
 
-*A 14-team half-PPR draft from slot 8, paused at pick 31. Grey dots in the scatters are
-players already off the board, green are on your roster. Screenshots below show different
-points in the same draft; totals are not meant to reconcile across images.*
+*Two picks into a half-PPR draft from slot 4. Gibbs and Bijan Robinson are gone, struck
+through in the table and greyed in the scatters. The green rule is the divider marking
+your next pick, and it sits directly under Ja'Marr Chase because exactly one available
+player is expected off the board before your turn. Screenshots show different drafts at
+different points and are not meant to reconcile across images.*
 
 ## What it does
 
@@ -25,8 +27,8 @@ points in the same draft; totals are not meant to reconcile across images.*
   the median of startable players, which is the number worth reading.
 - Tracks the draft as it happens. Mark a player gone and the countdown, the pick carousel,
   and the green divider showing where your next pick lands all move with it.
-- Lays your own picks into league slots (QB/RB/RB/WR/WR/TE/FLEX/BE) with each player's
-  ADP, implied points, and delta adj.
+- Lays your own picks into your league's starter slots, flex and bench included, with
+  each player's ADP, implied points, and delta adj.
 - Breaks down market-implied touchdowns per team by scoring position, including the
   scores the market implies but assigns to nobody it prices.
 - Refreshes each source on demand and stamps every one with its age. Nothing expires on
@@ -51,9 +53,10 @@ points, ESPN's projection for the same stat, and each book's line with its odds.
 
 ![Expanded player with the book breakdown](docs/detail.png)
 
-*DeVonta Smith's receiving yards line is 1049.5 at all three books while ESPN projects
-1129.8, so vegas is under ESPN on yardage but the position median is further under, and
-delta adj comes out positive. The green rule two rows below marks where pick 36 lands.*
+*Jahmyr Gibbs, one of the few players with a real line on all five stats. DraftKings has
+his rushing yards at 1199.5 while Pinnacle and Bovada both post 1249.5, so the median
+takes 1249.5. His rushing TD resolves to 12 from DraftKings' 12.5 and Bovada's 11.5, with
+Pinnacle not posting one at all. ESPN projects 333.1 points against vegas at 299.1.*
 
 ### Track the draft
 
@@ -61,16 +64,19 @@ Mark a player **GONE** as he is taken, or **MINE** when you take him. Marks are 
 input the pick maths uses: picks made equals marks, so the header countdown, the carousel,
 and the divider all follow from keeping the board current.
 
-The divider appears only on the ascending ADP sort. "These players go before your turn"
-is a claim about draft order, and drawing a confident green line at an arbitrary spot in
-a delta-sorted list would be worse than drawing nothing.
+The divider in the first screenshot is placed by counting available players, not by
+position on screen: one pick until your turn puts it under exactly one unmarked player.
+It appears only on the ascending ADP sort. "These players go before your turn" is a claim
+about draft order, and drawing a confident green line at an arbitrary spot in a
+delta-sorted list would be worse than drawing nothing.
 
 ### Roster
 
 ![Roster slots](docs/roster.png)
 
-*Seven picks in, at pick 105. Empty slots are the honest ones: this roster is short a QB
-and a second WR with the bench already filling up with tight ends.*
+*A filled 15-man roster in a two-FLEX league. Delta adj is carried per player: McBride at
++13 is the one vegas rates well above ESPN relative to other tight ends, while McCaffrey
+at -18 is the books pricing in missed games that ESPN's projection does not.*
 
 ### Team touchdowns
 

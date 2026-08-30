@@ -9,3 +9,4 @@ static/index.old.html
 
 # Reference screenshots of another app's UI - kept locally, never published
 IMG_*.png
+.claude/
