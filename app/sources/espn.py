@@ -61,12 +61,20 @@ def fetch(limit: int = 400) -> list[dict]:
                     if v:
                         proj[key] = round(v, 1)
                 break
+        # ESPN's own ranking, which is a different quantity from ADP: rank is
+        # where ESPN says a player should go, ADP is where he actually goes.
+        # Only PPR and STANDARD exist - there is no half-PPR rank type.
+        dr = p.get("draftRanksByRankType") or {}
+        rank_ppr = (dr.get("PPR") or {}).get("rank")
+        rank_std = (dr.get("STANDARD") or {}).get("rank")
         out.append(
             {
                 "name": p.get("fullName", ""),
                 "pos": pos,
                 "team": TEAM.get(p.get("proTeamId"), "?"),
                 "adp": round(adp, 1),
+                "rank_ppr": rank_ppr,
+                "rank_std": rank_std,
                 "auction": (own.get("auctionValueAverage") or 0),
                 "proj": proj,
             }

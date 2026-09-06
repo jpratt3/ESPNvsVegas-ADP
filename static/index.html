@@ -286,7 +286,7 @@
     </div>
     <div class="tbl-scroll">
       <div class="lhead cols" id="lhead">
-        <span>RK</span>
+        <span data-k="espnRank" title="ESPN's own draftRanksByRankType. This is where ESPN ranks a player, which is not where he actually goes - compare it against ADP. ESPN publishes PPR and STANDARD only, so half-PPR scoring shows the PPR list.">ESPN RK</span>
         <span class="l" data-k="name">PLAYER</span>
         <span data-k="adp">ADP</span>
         <span data-k="adpPosRank">ADP POS#</span>
@@ -367,7 +367,7 @@ const SECONDARY = {QB:["rush_yds"], RB:["rec_yds"], WR:[], TE:[]};
 const YPR = {RB: 8.5, WR: 13, TE: 11};
 const BOOK_LABEL = {draftkings:"DK", pinnacle:"Pinn", bovada:"Bov"};
 const FLEX_SHARE = {RB: 0.45, WR: 0.45, TE: 0.10};
-const ASC_KEYS = {adp:1, adpPosRank:1, vegasPosRank:1, name:1};
+const ASC_KEYS = {adp:1, adpPosRank:1, vegasPosRank:1, name:1, espnRank:1};
 
 const $ = s => document.querySelector(s);
 const LEAGUE_KEY = "draftValue.league.2026", BOARD_KEY = "draftValue.board.2026", LAST_KEY = "draftValue.last.2026";
@@ -423,6 +423,7 @@ function compute() {
     for (const s of used) if (p.proj && p.proj[s] != null) { dv += (comp[s] - p.proj[s]) * w[s]; matched++; }
     p.dEspn = matched ? dv : null;
     p.state = board[pkey(p)] || null;
+    p.espnRank = (ppr === 0 ? p.rank_std : p.rank_ppr) || null;
     return p;
   });
   players.forEach(p => {
@@ -557,7 +558,7 @@ function renderPlayers(players) {
     if (p.filled.length) lines += " +" + p.filled.length + "f";
     if (p.estRec != null) lines += " +est";
     tr.innerHTML =
-      "<div class=\"rk\">" + (i+1) + "</div>" +
+      "<div class=\"rk\">" + (p.espnRank == null ? "-" : p.espnRank) + "</div>" +
       "<div><div class=\"pname\">" + p.name + "</div>" +
       "<div class=\"pmeta\">" + p.team + " <span class=\"poschip " + p.pos + "\">" + p.pos + "</span>" + warn + "</div></div>" +
       "<div class=\"num sub\">" + p.adp.toFixed(1) + "</div>" +
