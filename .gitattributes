@@ -1,3 +1,9 @@
 * text=auto eol=lf
 *.bat text eol=crlf
 *.png binary
+
+# Linguist: this is a Python project. static/index.html is the view layer, not the
+# codebase, and outweighs app/ roughly 3:1 by bytes, which made GitHub label the
+# whole repo "HTML".
+static/index.html linguist-detectable=false
+docs/* linguist-documentation

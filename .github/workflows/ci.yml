@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ['3.11', '3.12', '3.13']
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+          cache: pip
+
+      - name: Install
+        run: pip install -r requirements.txt
+
+      # Name normalization is the join key between four sources. It is pure, so it
+      # runs without touching the network. No test dependencies: stdlib unittest.
+      - name: Test
+        run: python -m unittest discover -s tests -t .
+
+      # Catches syntax errors in the source adapters, which otherwise only execute
+      # when a given book is actually reachable.
+      - name: Compile
+        run: python -m compileall -q app
+
+      # Importing the app builds the whole FastAPI route table, so a bad decorator or
+      # a broken import in app/sources fails here rather than at first request.
+      - name: Import and route check
+        run: |
+          python -c "
+          from app.main import app
+          routes = [r.path for r in app.routes]
+          assert '/api/refresh/{source}' in routes, routes
+          print(len(routes), 'routes registered')
+          "

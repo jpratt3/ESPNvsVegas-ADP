@@ -1,5 +1,7 @@
 # Draft Value
 
+[![CI](https://github.com/jpratt3/ESPNvsVegas-ADP/actions/workflows/ci.yml/badge.svg)](https://github.com/jpratt3/ESPNvsVegas-ADP/actions/workflows/ci.yml)
+
 This is a locally run draft board for fantasy football that prices players against
 sportsbook lines instead of arbitrary app rankings. It pulls ESPN's average draft position and
 season-long player props from DraftKings, Pinnacle, and Bovada, converts the props into
@@ -14,6 +16,67 @@ through in the table and greyed in the scatters. The green rule is the divider m
 your next pick, and it sits directly under Ja'Marr Chase because exactly one available
 player is expected off the board before your turn. Screenshots show different drafts at
 different points and are not meant to reconcile across images.*
+
+## Architecture
+
+```mermaid
+flowchart TB
+  subgraph src ["Sources · read-only HTTP, on demand"]
+    ESPN["ESPN<br/>ADP + projections"]
+    DK["DraftKings"]
+    PIN["Pinnacle"]
+    BOV["Bovada"]
+  end
+
+  subgraph ingest ["Ingest · app/ · FastAPI"]
+    Fetch["<i>sources/*.py</i> — curl_cffi, TLS impersonation<br/><i>matching.normalize</i> — aliases · suffixes · book typos"]
+    Store[("<i>store.py</i> · cached snapshots + age stamps")]
+  end
+
+  subgraph agg ["Pricing"]
+    Convert["Median line per stat where 2+ books overlap<br/>→ fantasy points: 0.04/pass yd · 4/pass TD<br/>0.1/rush+rec yd · 6/TD · PPR toggle"]
+  end
+
+  subgraph signal ["Disagreement"]
+    Adj["<b>Delta pts</b> = vegas − ESPN, priced stats only<br/><b>Delta adj</b> = minus the position's startable median"]
+  end
+
+  subgraph ui ["Board · static/index.html"]
+    Table["Player board<br/>ranked within position"]
+    Draft["Draft tracker<br/>GONE / MINE · pick divider"]
+    Roster["Roster slots"]
+    Teams["Team TD composition<br/>+ unassigned gap"]
+  end
+
+  ESPN & DK & PIN & BOV --> Fetch --> Store --> Convert --> Adj
+  Adj --> Table & Roster
+  Convert --> Teams
+  Table <-->|marks drive pick math| Draft
+
+  classDef srcC fill:#e0f2fe,stroke:#0369a1,color:#0c4a6e
+  classDef ingC fill:#ede9fe,stroke:#6d28d9,color:#4c1d95
+  classDef aggC fill:#fef3c7,stroke:#b45309,color:#78350f
+  classDef sigC fill:#ffe4e6,stroke:#be123c,color:#881337
+  classDef uiC fill:#dcfce7,stroke:#15803d,color:#14532d
+  classDef grp fill:#f8fafc,stroke:#cbd5e1,color:#475569
+  class ESPN,DK,PIN,BOV srcC
+  class Fetch,Store ingC
+  class Convert aggC
+  class Adj sigC
+  class Table,Draft,Roster,Teams uiC
+  class src,ingest,agg,signal,ui grp
+```
+
+### Stack
+
+| Layer | Implementation |
+|---|---|
+| API | Python 3.11+, FastAPI, uvicorn |
+| Scraping | `curl_cffi` with TLS impersonation, one adapter per book |
+| Joining | Name normalization across four sources: accents, punctuation, generational suffixes, per-book aliases |
+| Aggregation | Median line per stat where two or more books post one |
+| Frontend | Single page, no build step, no framework |
+| Tests | stdlib `unittest`, no test dependencies |
 
 ## What it does
 
@@ -187,3 +250,19 @@ rather than dropped.
 This is a personal project, published because the vegas-versus-ADP framing might be useful
 to someone else. It was built for one league and one draft. The numbers are only as good
 as the lines behind them, and the interface tells you when they are thin.
+
+## Tests
+
+```bash
+python -m unittest discover -s tests -t .
+```
+
+Name normalization is the join key between ESPN and three sportsbooks, and it fails
+quietly: when it drifts, a player simply stops matching and loses his lines rather than
+raising anything. So the rules are pinned — suffix stripping, accent folding, the book
+that prints `III` as three lowercase L's, the alias that points a misattributed rushing
+TD line at the running back instead of the cornerback with a similar name, and the
+idempotence the output relies on for being used as a dict key.
+
+CI runs them on Python 3.11, 3.12 and 3.13, compiles `app/`, and imports the FastAPI app
+so a broken source adapter fails on push rather than at first request.
